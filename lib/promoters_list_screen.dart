@@ -1,42 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:phylab_manager/add_student_screen.dart';
 import 'package:phylab_manager/firebase/dbManager.dart';
 import 'package:phylab_manager/helpers.dart';
-import 'package:phylab_manager/model/student.dart';
+import 'package:phylab_manager/model/college.dart';
+import 'package:phylab_manager/model/promoter.dart';
+import 'package:phylab_manager/students_list_screen.dart';
 import 'package:phylab_manager/theme.dart';
 import 'package:phylab_manager/transition_route_observer.dart';
 import 'package:phylab_manager/widgets/center_loading_pleasewait.dart';
 import 'package:phylab_manager/widgets/fade_in.dart';
 
-import 'model/student.dart';
-
-class StudentsListScreen extends StatefulWidget {
-  static String routeName = "StudentsListScreen";
-  StudentsListScreen({Key key}) : super(key: key);
-
+class PromotersListScreen extends StatefulWidget {
+  static String routeName = "PromotersListScreen";
+  PromotersListScreen({Key key}) : super(key: key);
   @override
-  _StudentsListScreenState createState() => _StudentsListScreenState();
+  _PromotersListScreenState createState() => _PromotersListScreenState();
 }
 
-class _StudentsListScreenState extends State<StudentsListScreen>
+class _PromotersListScreenState extends State<PromotersListScreen>
     with SingleTickerProviderStateMixin, TransitionRouteAware {
   AnimationController _loadingController;
 
-  List<Student> students = List<Student>();
-  Future<List<Student>> studentsFuture;
+  Future<List<Promoter>> collegesFuture;
+  List<Promoter> colleges = List<Promoter>();
+
+  bool toAddStudent = false;
 
   @override
   void initState() {
     super.initState();
 
-    studentsFuture = DBManager.instance
-        .getStudentsList(Helper.currentUserId, Helper.currentCollege.id);
+    collegesFuture = DBManager.instance.getPromotersList();
 
     _loadingController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _loadingController.forward();
   }
 
   @override
@@ -47,10 +47,14 @@ class _StudentsListScreenState extends State<StudentsListScreen>
 
   @override
   void didPushAfterTransition() {
+    print('comiing');
     _loadingController.forward();
   }
 
   List<Widget> _buildList(BuildContext context) {
+    final Map arguments = ModalRoute.of(context).settings.arguments as Map;
+    if (arguments != null) toAddStudent = arguments['toAddStudent'];
+
     final theme = Theme.of(context);
     List<Widget> items = List<Widget>();
     items.add(FadeIn(
@@ -58,53 +62,70 @@ class _StudentsListScreenState extends State<StudentsListScreen>
       offset: 1,
       fadeDirection: FadeDirection.endToStart,
       child: Text(
-        'Students List',
+        'Promoters List',
         style: theme.textTheme.headline5.copyWith(
           fontWeight: FontWeight.w900,
           color: accentSwatch.shade400,
         ),
       ),
     ));
-    items.add(FadeIn(
-      controller: _loadingController,
-      offset: 1,
-      fadeDirection: FadeDirection.endToStart,
-      child: Text(
-        Helper.getCollegeFullName(),
-        style: theme.textTheme.caption,
-      ),
-    ));
-
     items.add(SizedBox(
       height: 20,
     ));
     double count = 1;
-    for (var item in students) {
-      items.add(
-        FadeIn(
-          controller: _loadingController,
-          offset: count++,
-          child: Card(
-            elevation: 10,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
+    for (var item in colleges) {
+      items.add(FadeIn(
+        controller: _loadingController,
+        offset: count++,
+        child: Card(
+          elevation: 10,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          child: ListTile(
+            hoverColor: theme.primaryColorLight,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Icon(FontAwesomeIcons.university),
             ),
-            child: ListTile(
-              hoverColor: theme.primaryColorLight,
-              leading: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(FontAwesomeIcons.userGraduate),
-              ),
-              title: Text(item.name,
-                  style: TextStyle(
-                    color: primarySwatch.shade800,
-                    fontWeight: FontWeight.w900,
-                  )),
-              subtitle: Text(item.getStudentInfoForStudentsListScreen()),
+            title: Text(item.name,
+                style: TextStyle(
+                  color: primarySwatch.shade800,
+                  fontWeight: FontWeight.w900,
+                )),
+            subtitle: Row(
+              children: [
+                Expanded(
+                  child: Text(item.email),
+                  flex: 2,
+                ),
+                Expanded(
+                  child: Text(item.phone),
+                  flex: 2,
+                ),
+                Expanded(
+                    flex: 1,
+                    child: Row(
+                      children: [
+                        FaIcon(
+                          FontAwesomeIcons.userGraduate,
+                          color: primarySwatch.shade300,
+                          size: 10,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(item.students.toString()),
+                        ),
+                      ],
+                    )),
+              ],
             ),
+            //trailing: Icon(FontAwesomeIcons.angleDoubleRight),
+            isThreeLine: false,
+            onTap: null,
           ),
         ),
-      );
+      ));
     }
     return items;
   }
@@ -122,20 +143,20 @@ class _StudentsListScreenState extends State<StudentsListScreen>
             height: double.infinity,
             color: theme.primaryColor.withOpacity(.1),
             child: FutureBuilder(
-              future: studentsFuture,
-              builder: (context, AsyncSnapshot<List<Student>> snapshot) {
+              future: collegesFuture,
+              builder: (context, AsyncSnapshot<List<Promoter>> snapshot) {
                 if (snapshot.hasData) {
                   if (snapshot.data.length == 0) {
                     return Center(
                       child: Text(
-                        'No Students',
+                        'No promoters',
                         style: theme.textTheme.caption,
                       ),
                     );
                   } else {
-                    if (students.length == 0) {
+                    if (colleges.length == 0) {
                       snapshot.data.forEach((element) {
-                        students.add(element);
+                        colleges.add(element);
                       });
                     }
                     var widges = _buildList(context);

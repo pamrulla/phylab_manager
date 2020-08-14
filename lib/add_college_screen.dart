@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:phylab_manager/add_student_screen.dart';
+import 'package:phylab_manager/firebase/dbManager.dart';
 import 'package:phylab_manager/helpers.dart';
 import 'package:phylab_manager/main.dart';
 import 'package:phylab_manager/model/college.dart';
@@ -35,10 +36,13 @@ class _AddCollegeScreenState extends State<AddCollegeScreen>
   FocusNode _codeFocusNode = FocusNode();
 
   final _formKey = GlobalKey<FormState>();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
+
+    college.pid = Helper.currentUserId;
 
     _nameController = TextEditingController(text: college.name);
     _cityController = TextEditingController(text: college.city);
@@ -93,6 +97,7 @@ class _AddCollegeScreenState extends State<AddCollegeScreen>
       onWillPop: null,
       child: SafeArea(
         child: Scaffold(
+          key: _scaffoldKey,
           appBar: Helper.buildAppBar(context, theme, _loadingController),
           body: Container(
             width: double.infinity,
@@ -158,7 +163,7 @@ class _AddCollegeScreenState extends State<AddCollegeScreen>
                           ),
                         ),
                       ),
-                      FadeIn(
+                      /*FadeIn(
                         controller: _loadingController,
                         offset: 3,
                         child: Padding(
@@ -175,7 +180,7 @@ class _AddCollegeScreenState extends State<AddCollegeScreen>
                             },
                           ),
                         ),
-                      ),
+                      ),*/
                     ],
                   ),
                 ),
@@ -230,26 +235,36 @@ class _AddCollegeScreenState extends State<AddCollegeScreen>
                     offset: 6,
                     fadeDirection: FadeDirection.bottomToTop,
                     child: FlatButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
                         if (_formKey.currentState.validate()) {
-                          Helper.currentCollege = college;
-                          Helper.currentCollege.info();
-                          showDialog(
-                              context: context,
-                              builder: (alertContext) {
-                                return prepareAlertDialogBox(
-                                    context, alertContext);
-                              });
+                          Helper.showProgressbarDialog(context);
+                          bool ret =
+                              await DBManager.instance.addCollege(college);
+                          Navigator.pop(context);
+                          if (ret) {
+                            Helper.currentCollege = college;
+                            Helper.currentCollege.info();
+
+                            showDialog(
+                                context: context,
+                                builder: (alertContext) {
+                                  return prepareAlertDialogBox(
+                                      context, alertContext);
+                                });
+                          } else {
+                            Helper.ShowASnakBar(_scaffoldKey,
+                                "Something went wrong while adding College, please try again...");
+                          }
                         } else {}
                       },
                       icon: Icon(
                         FontAwesomeIcons.arrowAltCircleRight,
-                        color: secondaryColor.shade500,
+                        color: theme.primaryColorDark,
                       ),
                       label: Text(
                         "Submit",
                         style: TextStyle(
-                          color: secondaryColor.shade500,
+                          color: theme.primaryColorDark,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -292,12 +307,12 @@ class _AddCollegeScreenState extends State<AddCollegeScreen>
           },
           icon: Icon(
             FontAwesomeIcons.userGraduate,
-            color: secondaryColor.shade500,
+            color: theme.primaryColorDark,
           ),
           label: Text(
             "Register New Student",
             style: TextStyle(
-              color: secondaryColor.shade500,
+              color: theme.primaryColorDark,
               fontWeight: FontWeight.bold,
             ),
           ),

@@ -1,7 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phylab_manager/add_college_screen.dart';
+import 'package:phylab_manager/add_promoter_screen.dart';
 import 'package:phylab_manager/add_student_screen.dart';
+import 'package:phylab_manager/promoters_list_screen.dart';
 import 'package:phylab_manager/students_list_screen.dart';
 import 'package:phylab_manager/theme.dart';
 import 'package:phylab_manager/transition_route_observer.dart';
@@ -10,13 +13,16 @@ import 'colleges_list_screen.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 
-void main() {
+Future<void> main() async {
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle(
       systemNavigationBarColor:
           SystemUiOverlayStyle.dark.systemNavigationBarColor,
     ),
   );
+  // WidgetsFlutterBinding.ensureInitialized();
+  // await Firestore.instance
+  //     .settings(host: '192.168.31.227:8080', sslEnabled: false);
   runApp(MyApp());
 }
 
@@ -100,6 +106,8 @@ class MyApp extends StatelessWidget {
         AddStudentScreen.routeName: (context) => AddStudentScreen(),
         CollegesListScreen.routeName: (context) => CollegesListScreen(),
         StudentsListScreen.routeName: (context) => StudentsListScreen(),
+        AddPromoterScreen.routeName: (context) => AddPromoterScreen(),
+        PromotersListScreen.routeName: (context) => PromotersListScreen(),
       },
     );
   }

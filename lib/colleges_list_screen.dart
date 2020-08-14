@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:phylab_manager/add_student_screen.dart';
+import 'package:phylab_manager/firebase/dbManager.dart';
 import 'package:phylab_manager/helpers.dart';
 import 'package:phylab_manager/model/college.dart';
 import 'package:phylab_manager/students_list_screen.dart';
 import 'package:phylab_manager/theme.dart';
 import 'package:phylab_manager/transition_route_observer.dart';
+import 'package:phylab_manager/widgets/center_loading_pleasewait.dart';
 import 'package:phylab_manager/widgets/fade_in.dart';
 
 class CollegesListScreen extends StatefulWidget {
   static String routeName = "CollegesListScreen";
   CollegesListScreen({Key key}) : super(key: key);
-
   @override
   _CollegesListScreenState createState() => _CollegesListScreenState();
 }
@@ -19,31 +21,21 @@ class _CollegesListScreenState extends State<CollegesListScreen>
     with SingleTickerProviderStateMixin, TransitionRouteAware {
   AnimationController _loadingController;
 
+  Future<List<College>> collegesFuture;
   List<College> colleges = List<College>();
 
-  void _prepareDummyColleges() {
-    for (var i = 0; i < 10; ++i)
-      colleges.add(College(
-        city: "c" + i.toString(),
-        name: "n" + i.toString(),
-        code: 'code' + i.toString(),
-        id: '',
-        students: i + 1,
-      ));
-  }
+  bool toAddStudent = false;
 
   @override
   void initState() {
     super.initState();
 
-    //TODO remove it
-    _prepareDummyColleges();
+    collegesFuture = DBManager.instance.getCollegesList(Helper.currentUserId);
 
     _loadingController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _loadingController.forward();
   }
 
   @override
@@ -54,10 +46,14 @@ class _CollegesListScreenState extends State<CollegesListScreen>
 
   @override
   void didPushAfterTransition() {
+    print('comiing');
     _loadingController.forward();
   }
 
   List<Widget> _buildList(BuildContext context) {
+    final Map arguments = ModalRoute.of(context).settings.arguments as Map;
+    if (arguments != null) toAddStudent = arguments['toAddStudent'];
+
     final theme = Theme.of(context);
     List<Widget> items = List<Widget>();
     items.add(FadeIn(
@@ -75,48 +71,60 @@ class _CollegesListScreenState extends State<CollegesListScreen>
     items.add(SizedBox(
       height: 20,
     ));
+    double count = 1;
     for (var item in colleges) {
-      items.add(Card(
-        elevation: 10,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        child: ListTile(
-          hoverColor: theme.primaryColorLight,
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(FontAwesomeIcons.university),
+      items.add(FadeIn(
+        controller: _loadingController,
+        offset: count++,
+        child: Card(
+          elevation: 10,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
           ),
-          title: Text(item.name,
-              style: TextStyle(
-                color: primarySwatch.shade800,
-                fontWeight: FontWeight.w900,
-              )),
-          subtitle: Row(
-            children: [
-              Expanded(child: Text(item.city)),
-              Expanded(child: Text(item.code)),
-              Expanded(
-                  child: Row(
-                children: [
-                  FaIcon(
-                    FontAwesomeIcons.userGraduate,
-                    color: primarySwatch.shade300,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(item.students.toString()),
-                  ),
-                ],
-              )),
-            ],
+          child: ListTile(
+            hoverColor: theme.primaryColorLight,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Icon(FontAwesomeIcons.university),
+            ),
+            title: Text(item.name,
+                style: TextStyle(
+                  color: primarySwatch.shade800,
+                  fontWeight: FontWeight.w900,
+                )),
+            subtitle: Row(
+              children: [
+                Expanded(child: Text(item.city)),
+                //Expanded(child: Text(item.code)),
+                Expanded(
+                    child: Row(
+                  children: [
+                    FaIcon(
+                      FontAwesomeIcons.userGraduate,
+                      color: primarySwatch.shade300,
+                      size: 20,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(item.students.toString()),
+                    ),
+                  ],
+                )),
+              ],
+            ),
+            trailing: Icon(
+              FontAwesomeIcons.angleDoubleRight,
+              color: theme.primaryColorDark,
+            ),
+            isThreeLine: false,
+            onTap: () {
+              Helper.currentCollege = item;
+              if (toAddStudent)
+                Navigator.popAndPushNamed(context, AddStudentScreen.routeName);
+              else
+                Navigator.pushNamed(context, StudentsListScreen.routeName);
+            },
           ),
-          trailing: Icon(FontAwesomeIcons.angleDoubleRight),
-          isThreeLine: false,
-          onTap: () {
-            Helper.currentCollege = item;
-            Navigator.pushNamed(context, StudentsListScreen.routeName);
-          },
         ),
       ));
     }
@@ -130,18 +138,43 @@ class _CollegesListScreenState extends State<CollegesListScreen>
       onWillPop: null,
       child: SafeArea(
         child: Scaffold(
-          appBar: Helper.buildAppBar(context, theme, _loadingController),
+          appBar: Helper.buildAppBarNoAnim(context, theme),
           body: Container(
             width: double.infinity,
             height: double.infinity,
             color: theme.primaryColor.withOpacity(.1),
-            child: SingleChildScrollView(
-              child: Container(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  children: _buildList(context),
-                ),
-              ),
+            child: FutureBuilder(
+              future: collegesFuture,
+              builder: (context, AsyncSnapshot<List<College>> snapshot) {
+                if (snapshot.hasData) {
+                  if (snapshot.data.length == 0) {
+                    return Center(
+                      child: Text(
+                        'No colleges',
+                        style: theme.textTheme.caption,
+                      ),
+                    );
+                  } else {
+                    if (colleges.length == 0) {
+                      snapshot.data.forEach((element) {
+                        colleges.add(element);
+                      });
+                    }
+                    var widges = _buildList(context);
+                    _loadingController.forward();
+                    return SingleChildScrollView(
+                      child: Container(
+                        padding: EdgeInsets.all(20),
+                        child: Column(
+                          children: widges,
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  return CenterLoadingPleasewait();
+                }
+              },
             ),
           ),
         ),

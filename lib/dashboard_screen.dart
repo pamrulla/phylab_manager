@@ -4,10 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:phylab_manager/add_college_screen.dart';
+import 'package:phylab_manager/add_promoter_screen.dart';
 import 'package:phylab_manager/add_student_screen.dart';
 import 'package:phylab_manager/colleges_list_screen.dart';
+import 'package:phylab_manager/promoters_list_screen.dart';
 import 'package:phylab_manager/theme.dart';
 import 'custom_route.dart';
+import 'helpers.dart';
 import 'main.dart';
 import 'transition_route_observer.dart';
 import 'widgets/fade_in.dart';
@@ -47,7 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     _loadingController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 2000),
     );
 
     _headerScaleAnimation =
@@ -82,7 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
     final signOutBtn = IconButton(
       icon: const Icon(FontAwesomeIcons.signOutAlt),
-      color: Color(secondaryColor.value),
+      color: theme.primaryColorDark,
       onPressed: () => _goToLogin(context),
     );
     final title = Center(
@@ -157,32 +160,32 @@ class _DashboardScreenState extends State<DashboardScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              "Welcome Khan",
+              "Welcome " + Helper.currentUser.name,
               style: theme.textTheme.headline6,
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'INR',
-                  style: theme.textTheme.display2.copyWith(
-                    fontWeight: FontWeight.w300,
-                    color: accentColor.shade400,
-                  ),
-                ),
-                SizedBox(width: 5),
-                AnimatedNumericText(
-                  initialValue: 0,
-                  targetValue: totalEarned,
-                  curve: Interval(0, .5, curve: Curves.easeOut),
-                  controller: _loadingController,
-                  style: theme.textTheme.display2.copyWith(
-                    foreground: Paint()..shader = linearGradient,
-                  ),
-                ),
-              ],
-            ),
-            Text('Total Earned', style: theme.textTheme.caption),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.center,
+            //   children: <Widget>[
+            //     Text(
+            //       'INR',
+            //       style: theme.textTheme.display2.copyWith(
+            //         fontWeight: FontWeight.w300,
+            //         color: accentColor.shade400,
+            //       ),
+            //     ),
+            //     SizedBox(width: 5),
+            //     AnimatedNumericText(
+            //       initialValue: 0,
+            //       targetValue: totalEarned,
+            //       curve: Interval(0, .5, curve: Curves.easeOut),
+            //       controller: _loadingController,
+            //       style: theme.textTheme.display2.copyWith(
+            //         foreground: Paint()..shader = linearGradient,
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            // Text('Total Earned', style: theme.textTheme.caption),
           ],
         ),
       ),
@@ -208,6 +211,74 @@ class _DashboardScreenState extends State<DashboardScreen>
     const step = 0.04;
     const aniInterval = 0.75;
 
+    List<Widget> buttons = List<Widget>();
+    buttons.add(_buildButton(
+      icon: Icon(FontAwesomeIcons.university),
+      label: 'Register College',
+      interval: Interval(0, aniInterval),
+      onPressed: () {
+        Navigator.of(context).pushNamed(AddCollegeScreen.routeName);
+      },
+    ));
+    buttons.add(_buildButton(
+      icon: Container(
+        // fix icon is not centered like others for some reasons
+        padding: const EdgeInsets.only(left: 16.0),
+        alignment: Alignment.centerLeft,
+        child: Icon(
+          FontAwesomeIcons.listUl,
+          size: 20,
+        ),
+      ),
+      label: 'Colleges List',
+      interval: Interval(step, aniInterval + step),
+      onPressed: () {
+        Navigator.of(context).pushNamed(CollegesListScreen.routeName);
+      },
+    ));
+    if (Helper.isAdmin()) {
+      buttons.add(_buildButton(
+        icon: Icon(FontAwesomeIcons.userNinja),
+        label: 'Register Promoter',
+        interval: Interval(0, aniInterval),
+        onPressed: () async {
+          var result = await Navigator.of(context)
+              .pushNamed(AddPromoterScreen.routeName);
+          if (result != null && result)
+            globalKey.currentState
+              ..removeCurrentSnackBar()
+              ..showSnackBar(SnackBar(
+                content: Center(child: Text("Successfully added promoter...")),
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+              ));
+        },
+      ));
+      buttons.add(_buildButton(
+        icon: Icon(FontAwesomeIcons.userFriends),
+        label: 'Promoters List',
+        interval: Interval(0, aniInterval),
+        onPressed: () async {
+          Navigator.of(context).pushNamed(PromotersListScreen.routeName);
+        },
+      ));
+    }
+    buttons.add(_buildButton(
+      icon: Icon(FontAwesomeIcons.userGraduate),
+      label: 'Register Students',
+      interval: Interval(step * 2, aniInterval + step * 2),
+      onPressed: () {
+        Navigator.of(context).pushNamed(CollegesListScreen.routeName,
+            arguments: {'toAddStudent': true});
+      },
+    ));
+    buttons.add(_buildButton(
+      icon: Icon(FontAwesomeIcons.chartLine),
+      label: 'Report',
+      interval: Interval(0, aniInterval),
+      onPressed: () {
+        Helper.ShowASnakBar(globalKey, 'This feature is not yet implemented');
+      },
+    ));
     return GridView.count(
       padding: const EdgeInsets.symmetric(
         horizontal: 32.0,
@@ -216,53 +287,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       childAspectRatio: .9,
       // crossAxisSpacing: 5,
       crossAxisCount: 2,
-      children: [
-        _buildButton(
-          icon: Icon(FontAwesomeIcons.university),
-          label: 'Register College',
-          interval: Interval(0, aniInterval),
-          onPressed: () {
-            Navigator.of(context).pushNamed(AddCollegeScreen.routeName);
-          },
-        ),
-        _buildButton(
-          icon: Container(
-            // fix icon is not centered like others for some reasons
-            padding: const EdgeInsets.only(left: 16.0),
-            alignment: Alignment.centerLeft,
-            child: Icon(
-              FontAwesomeIcons.listUl,
-              size: 20,
-            ),
-          ),
-          label: 'Colleges List',
-          interval: Interval(step, aniInterval + step),
-          onPressed: () {
-            Navigator.of(context).pushNamed(CollegesListScreen.routeName);
-          },
-        ),
-        _buildButton(
-          icon: Icon(FontAwesomeIcons.userGraduate),
-          label: 'Register Students',
-          interval: Interval(step * 2, aniInterval + step * 2),
-          onPressed: () {
-            Navigator.of(context).pushNamed(AddStudentScreen.routeName);
-          },
-        ),
-        _buildButton(
-          icon: Icon(FontAwesomeIcons.chartLine),
-          label: 'Report',
-          interval: Interval(0, aniInterval),
-          onPressed: () {
-            globalKey.currentState.showSnackBar(SnackBar(
-              content: Text(
-                'This feature is not yet implemented',
-                textAlign: TextAlign.center,
-              ),
-            ));
-          },
-        ),
-      ],
+      children: buttons,
     );
   }
 

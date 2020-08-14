@@ -5,6 +5,7 @@ import 'package:phylab_manager/helpers.dart';
 import 'constants.dart';
 import 'custom_route.dart';
 import 'dashboard_screen.dart';
+import 'firebase/auth.dart';
 import 'users.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -84,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen>
         print('Login info');
         print('Name: ${loginData.name}');
         print('Password: ${loginData.password}');
-        return _loginUser(loginData);
+        return Authorization().logIn(loginData.name, loginData.password);
       },
       onSignup: null,
       /*(loginData) {
