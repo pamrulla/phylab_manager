@@ -40,9 +40,16 @@ dependencies:
     path: ./flutter_login-1.0.14_khan/
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.7.5
   flutter_test:
     sdk: flutter
 
+flutter_icons:
+  image_path: "assets/images/iconlogo.png"
+  android: true # can specify file name here e.g. "ic_launcher"
+  ios: false # can specify file name here e.g. "My-Launcher-Icon"
+  adaptive_icon_background: "#ff11CAFE" # only available for Android 8.0 devices and above
+  adaptive_icon_foreground: "assets/images/iconlogo.png" # only available for Android 8.0 devices and above
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
