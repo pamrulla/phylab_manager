@@ -18,11 +18,12 @@ class Student {
   ClassEnum classAssigned = ClassEnum.Class_11;
 
   String getEmailOfUser() {
-    return email.split('@').first + '@' + Helper.currentCollege.code + '.com';
+    // return email.split('@').first + '@' + Helper.currentCollege.code + '.com';
+    return email + '@' + Constants.domain;
   }
 
   String getStudentInfoForStudentsListScreen() {
-    return getEmailOfUser() +
+    return email +
         ", " +
         classAssigned.toString().split('.').last.replaceAll('_', ' ') +
         ", " +

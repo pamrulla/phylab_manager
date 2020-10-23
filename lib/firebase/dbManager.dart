@@ -32,7 +32,7 @@ class DBManager {
         return false;
       }
       college.id = doc.documentID;
-      doc.updateData(college.toMap());
+      doc.setData(college.toMap(), merge: true);
       return true;
     } catch (e) {
       print(e);

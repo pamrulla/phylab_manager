@@ -5,4 +5,5 @@ class Constants {
   static const String promoterTag = 'promoter';
   static const String studentTag = 'student';
   static const String adminTag = 'admin';
+  static const String domain = 'phylab.co.in';
 }

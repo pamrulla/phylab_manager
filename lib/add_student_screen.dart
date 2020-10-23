@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:phylab_manager/constants.dart';
 import 'package:phylab_manager/dashboard_screen.dart';
 import 'package:phylab_manager/firebase/auth.dart';
 import 'package:phylab_manager/firebase/dbManager.dart';
@@ -60,12 +61,14 @@ class _AddStudentScreenState extends State<AddStudentScreen>
 
     _nameController.addListener(() {
       student.name = _nameController.text;
+      updateEmailId();
     });
     _phoneController.addListener(() {
       student.phone = _phoneController.text;
+      updateEmailId();
     });
     _emailController.addListener(() {
-      student.email = _emailController.text;
+      //student.email = _emailController.text;
     });
     _parentNameController.addListener(() {
       student.parentName = _parentNameController.text;
@@ -185,7 +188,7 @@ class _AddStudentScreenState extends State<AddStudentScreen>
                             labelText: "Student Phone Number",
                             prefixIcon: Icon(FontAwesomeIcons.mobileAlt),
                             focusNode: _phoneFocusNode,
-                            focusNodeNext: _emailFocusNode,
+                            focusNodeNext: _parentNameFocusNode,
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
                             validator: (value) {
@@ -193,28 +196,6 @@ class _AddStudentScreenState extends State<AddStudentScreen>
                                 return "Phone Number should not be empty";
                               if (!Helper.isValidPhoneNumber(value))
                                 return "Invalid Phone Number";
-                              return null;
-                            },
-                          ),
-                        ),
-                      ),
-                      FadeIn(
-                        controller: _loadingController,
-                        offset: 3,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          child: TextFromFieldRounded(
-                            labelText: "Email",
-                            prefixIcon: Icon(FontAwesomeIcons.envelope),
-                            focusNode: _emailFocusNode,
-                            focusNodeNext: _parentNameFocusNode,
-                            controller: _emailController,
-                            validator: (value) {
-                              print(value);
-                              if (value.isEmpty)
-                                return "Email should not be empty";
-                              if (!Helper.isValidEmail(value))
-                                return 'Email is invalid';
                               return null;
                             },
                           ),
@@ -250,6 +231,7 @@ class _AddStudentScreenState extends State<AddStudentScreen>
                             labelText: "Parent Phone Number",
                             prefixIcon: Icon(FontAwesomeIcons.mobileAlt),
                             focusNode: _parentPhoneFocusNode,
+                            focusNodeNext: _emailFocusNode,
                             controller: _parentPhoneController,
                             keyboardType: TextInputType.phone,
                             validator: (value) {
@@ -257,6 +239,27 @@ class _AddStudentScreenState extends State<AddStudentScreen>
                                 return "Parent phone number should not be empty";
                               if (!Helper.isValidPhoneNumber(value))
                                 return "Invalid Phone Number";
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
+                      FadeIn(
+                        controller: _loadingController,
+                        offset: 3,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: TextFromFieldRounded(
+                            labelText: "Email",
+                            prefixIcon: Icon(FontAwesomeIcons.envelope),
+                            focusNode: _emailFocusNode,
+                            controller: _emailController,
+                            validator: (value) {
+                              print(value);
+                              if (value.isEmpty)
+                                return "Email should not be empty";
+                              if (!Helper.isValidEmail(value))
+                                return 'Email is invalid';
                               return null;
                             },
                           ),
@@ -367,12 +370,9 @@ class _AddStudentScreenState extends State<AddStudentScreen>
                       onPressed: () async {
                         if (_formKey.currentState.validate()) {
                           Helper.showProgressbarDialog(context);
-                          String password = student.name
-                                  .substring(0, 4)
-                                  .toUpperCase() +
-                              student.phone.substring(student.phone.length - 4);
+                          String password = student.email;
                           var response = await Authorization()
-                              .registerUser(student.email, password);
+                              .registerUser(student.getEmailOfUser(), password);
                           if (response.containsKey('error')) {
                             Navigator.pop(context);
                             Helper.ShowASnakBar(
@@ -440,6 +440,15 @@ class _AddStudentScreenState extends State<AddStudentScreen>
     _parentPhoneFocusNode.unfocus();
   }
 
+  void updateEmailId() {
+    if (student.name.isNotEmpty && student.phone.isNotEmpty) {
+      student.email = student.name.split(' ')[0] +
+          student.phone.substring(student.phone.length - 5);
+      _emailController.text = student.getEmailOfUser();
+      setState(() {});
+    }
+  }
+
   Widget prepareAlertDialogBox(
       BuildContext context, BuildContext alertContext) {
     final theme = Theme.of(context);
@@ -450,9 +459,7 @@ class _AddStudentScreenState extends State<AddStudentScreen>
       actions: <Widget>[
         FlatButton.icon(
           onPressed: () {
-            print('asf');
             Navigator.pop(alertContext);
-            print('zxcv');
             Navigator.pop(context);
           },
           icon: Icon(
